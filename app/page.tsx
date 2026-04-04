@@ -6,6 +6,8 @@ import dynamic from 'next/dynamic';
 import FilterPanel from '@/components/FilterPanel';
 import Sidebar from '@/components/Sidebar';
 
+import { VENETIAN_ERAS } from '@/lib/utils';
+
 // Dynamically import the Map so Next.js doesn't crash from Leaflet's 'window' dependency
 const Map = dynamic(() => import('@/components/map/MapContainer'), {
   ssr: false,
@@ -21,29 +23,25 @@ export default function AppDashboard() {
   const [activeCategories, setActiveCategories] = useState<string[]>([
     'Palaces', 'Churches', 'Living Heritage', 'Infrastructure'
   ]);
+  const [activeEras, setActiveEras] = useState<string[]>(VENETIAN_ERAS);
+  const [activeDistrict, setActiveDistrict] = useState<string>('All Venice');
+
   const [selectedXid, setSelectedXid] = useState<string | null>(null);
 
   return (
     <main className="h-screen w-screen relative overflow-hidden bg-slate-50 font-sans">
-
-      {/* Left Filter Panel */}
       <FilterPanel
-        activeCategories={activeCategories}
-        setActiveCategories={setActiveCategories}
+        activeCategories={activeCategories} setActiveCategories={setActiveCategories}
+        activeEras={activeEras} setActiveEras={setActiveEras}
+        activeDistrict={activeDistrict}           // PASS IT DOWN
+        setActiveDistrict={setActiveDistrict}     // PASS IT DOWN
       />
-
-      {/* The Map Engine */}
       <Map
-        activeCategories={activeCategories}
+        activeCategories={activeCategories} activeEras={activeEras}
+        activeDistrict={activeDistrict}           // PASS IT DOWN
         onMarkerClick={setSelectedXid}
       />
-
-      {/* Right Identity Sidebar */}
-      <Sidebar
-        selectedXid={selectedXid}
-        onClose={() => setSelectedXid(null)}
-      />
-
+      <Sidebar selectedXid={selectedXid} onClose={() => setSelectedXid(null)} />
     </main>
   );
 }

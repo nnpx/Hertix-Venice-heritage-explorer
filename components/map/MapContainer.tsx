@@ -4,18 +4,44 @@
 import { useEffect, useState } from 'react';
 import { MapContainer as LeafletMap, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { getCategory, getCategoryColor } from '@/lib/utils';
+import { getCategory, getCategoryColor, getVenetianEra, VENICE_DISTRICTS } from '@/lib/utils';
 import 'leaflet/dist/leaflet.css';
 
 const OTM_API_KEY = "5ae2e3f221c38a28845f05b6353ea2b640b23d596280ed55e36941d6";
 // Venice Bounding Box
 const BBOX = "lon_min=12.31&lat_min=45.42&lon_max=12.36&lat_max=45.45";
 
+// This invisible component sits inside the map and controls the "Camera"
+function MapController({ activeDistrict }: { activeDistrict: string }) {
+    const map = useMap(); // Hooks into the parent Leaflet map
+
+    useEffect(() => {
+        // Find the coordinates for the selected district
+        const districtData = VENICE_DISTRICTS.find(d => d.name === activeDistrict);
+
+        if (districtData) {
+            // Use Leaflet's flyTo for a smooth, cinematic drone-like camera movement
+            map.flyTo(
+                districtData.center as [number, number],
+                districtData.zoom,
+                { duration: 1.5 } // 1.5 second smooth animation
+            );
+        }
+    }, [activeDistrict, map]);
+
+    return null; // It renders nothing visually
+}
+
+
 export default function MapContainer({
     activeCategories,
+    activeEras,
+    activeDistrict,
     onMarkerClick
 }: {
     activeCategories: string[],
+    activeEras: string[],
+    activeDistrict: string,
     onMarkerClick: (xid: string) => void
 }) {
     const [places, setPlaces] = useState<any[]>([]);
@@ -25,8 +51,7 @@ export default function MapContainer({
         fetch(`https://api.opentripmap.com/0.1/en/places/bbox?${BBOX}&kinds=historic_architecture,churches,palaces,museums,bridges&format=json&apikey=${OTM_API_KEY}`)
             .then(res => res.json())
             .then(data => {
-                console.log('data', data)
-                /// 1. Log the raw response to see what the API is actually sending back
+                // 1. Log the raw response to see what the API is actually sending back
                 console.log("Raw OpenTripMap Response:", data);
 
                 // 2. Defensive Check: Ensure data is an array before mapping
@@ -38,15 +63,23 @@ export default function MapContainer({
                 // Normalize the data with our custom categories
                 const normalizedData = data.map((place: any) => ({
                     ...place,
-                    internal_category: getCategory(place.kinds)
+                    internal_category: getCategory(place.kinds || place.kind || ""),
+                    internal_era: getVenetianEra(place.name, place.xid)
                 }));
+
+                console.log('normalized data: ', normalizedData)
+
                 setPlaces(normalizedData);
             })
+
             .catch(console.error);
     }, []);
 
-    // Filter places based on active checkboxes
-    const filteredPlaces = places.filter(place => activeCategories.includes(place.internal_category));
+    // Double-Filter Logic (Spatial + Temporal)
+    const filteredPlaces = places.filter(place =>
+        activeCategories.includes(place.internal_category) &&
+        activeEras.includes(place.internal_era)
+    );
 
     // Custom Icon Generator
     const createCustomIcon = (category: string) => {
@@ -71,6 +104,8 @@ export default function MapContainer({
                 url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
+
+            <MapController activeDistrict={activeDistrict} />
 
             {filteredPlaces.map((place) => (
                 <Marker
