@@ -2,7 +2,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MapContainer as LeafletMap, TileLayer, Marker, useMap } from 'react-leaflet';
+// import { MapContainer as LeafletMap, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapContainer as LeafletMap, TileLayer, Marker, useMap, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import { getCategory, getCategoryColor, getVenetianEra, VENICE_DISTRICTS } from '@/lib/utils';
 import 'leaflet/dist/leaflet.css';
@@ -45,6 +46,15 @@ export default function MapContainer({
     onMarkerClick: (xid: string) => void
 }) {
     const [places, setPlaces] = useState<any[]>([]);
+
+    const [boundaries, setBoundaries] = useState<any>(null);
+
+    useEffect(() => {
+        fetch('/data/boundaries.json')
+            .then(res => res.json())
+            .then(data => setBoundaries(data))
+            .catch(console.error);
+    }, []);
 
     // Fetch initial markers on load
     useEffect(() => {
@@ -92,6 +102,24 @@ export default function MapContainer({
         });
     };
 
+    // The Dynamic Styling Logic
+    const getBoundaryStyle = (feature: any) => {
+        // Check if this polygon's name matches the dropdown
+        const isSelected = feature.properties.name === activeDistrict;
+
+        // If it's the "All Venice" reset state, don't highlight anything
+        if (activeDistrict === 'All Venice') {
+            return { opacity: 0, fillOpacity: 0 };
+        }
+
+        return {
+            fillColor: isSelected ? '#7fc7eb' : 'transparent', // Blue fill if active
+            fillOpacity: isSelected ? 0.2 : 0,                 // Light tint (20%)
+            color: isSelected ? '#55b2e0' : 'transparent',     // Solid blue border if active
+            weight: isSelected ? 2 : 0,                        // Thicker border
+        };
+    };
+
     return (
         <LeafletMap
             center={[45.4371, 12.3327]}
@@ -105,7 +133,18 @@ export default function MapContainer({
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
 
+            {/* Handles the zooming/flying */}
             <MapController activeDistrict={activeDistrict} />
+
+            {/* Handles the visual coloring/outlining */}
+            {boundaries && (
+                <GeoJSON
+                    data={boundaries}
+                    style={getBoundaryStyle}
+                    // CRITICAL: The key forces React to redraw the shapes when the dropdown changes
+                    key={`boundary-${activeDistrict}`}
+                />
+            )}
 
             {filteredPlaces.map((place) => (
                 <Marker
