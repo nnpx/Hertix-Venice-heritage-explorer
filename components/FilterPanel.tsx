@@ -35,6 +35,16 @@ export default function FilterPanel({
 
     return (
         <div className="absolute top-4 left-4 z-[1000] bg-white/90 backdrop-blur-md p-5 rounded-xl shadow-lg border border-slate-200 w-72">
+            {/* BRANDING HEADER */}
+            <div className="mb-6 border-b border-slate-200 pb-4">
+                <h1 className="text-2xl font-black tracking-tighter text-slate-900 flex items-center">
+                    HERTIX<span className="text-blue-600">.</span>
+                </h1>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
+                    Venice Heritage Explorer
+                </p>
+            </div>
+
             {/* District Dropdown */}
             <h2 className="text-sm font-black uppercase tracking-wider text-slate-500 mb-2">District (Sestiere)</h2>
             <select
