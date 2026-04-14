@@ -1,12 +1,12 @@
-// components/map/MapContainer.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
-// import { MapContainer as LeafletMap, TileLayer, Marker, useMap } from 'react-leaflet';
 import { MapContainer as LeafletMap, TileLayer, Marker, useMap, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import { getCategory, getCategoryColor, getVenetianEra, VENICE_DISTRICTS } from '@/lib/utils';
 import 'leaflet/dist/leaflet.css';
+import { renderToString } from 'react-dom/server';
+import { Landmark, Church, Home, Route, MapPin } from 'lucide-react';
 
 const OTM_API_KEY = "5ae2e3f221c38a28845f05b6353ea2b640b23d596280ed55e36941d6";
 // Venice Bounding Box
@@ -91,14 +91,46 @@ export default function MapContainer({
         activeEras.includes(place.internal_era)
     );
 
+    // Icon mapping logic
+    const getIconComponent = (category: string) => {
+        // We pass size=16 and color=white to make the icon fit perfectly inside our circle
+        const ICON_SIZE = 14
+        switch (category) {
+            case 'Palaces': return <Landmark size={ICON_SIZE} color="white" />;
+            case 'Churches': return <Church size={ICON_SIZE} color="white" />;
+            case 'Living Heritage': return <Home size={ICON_SIZE} color="white" />;
+            case 'Infrastructure': return <Route size={ICON_SIZE} color="white" />;
+            default: return <MapPin size={ICON_SIZE} color="white" />;
+        }
+    };
+
     // Custom Icon Generator
     const createCustomIcon = (category: string) => {
         const color = getCategoryColor(category);
+
+        // 1. Convert the React Component into a raw SVG string
+        const iconHtmlString = renderToString(getIconComponent(category));
+
+        // 2. Inject the SVG string into Leaflet's HTML wrapper
         return L.divIcon({
             className: 'custom-leaflet-icon',
-            html: `<div style="background-color: ${color}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-            iconSize: [16, 16],
-            iconAnchor: [8, 8]
+            html: `
+        <div style="
+          background-color: ${color}; 
+          width: 24px; 
+          height: 24px; 
+          border-radius: 50%; 
+          border: 2px solid white; 
+          box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">
+          ${iconHtmlString}
+        </div>
+      `,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16] // Center anchor so the icon points exactly at the coordinate
         });
     };
 

@@ -1,6 +1,7 @@
-// components/FilterPanel.tsx
 'use client';
-import { CATEGORIES, VENETIAN_ERAS, VENICE_DISTRICTS } from '@/lib/utils';
+import { Landmark, Church, Home, Route } from 'lucide-react';
+
+import { CATEGORIES, VENETIAN_ERAS, VENICE_DISTRICTS, getCategoryColor } from '@/lib/utils';
 
 export default function FilterPanel({
     activeCategories, setActiveCategories,
@@ -20,6 +21,18 @@ export default function FilterPanel({
         else setList([...list, item]);
     };
 
+    // Helper to render the correct icon with the correct category color
+    const renderCategoryIcon = (category: string) => {
+        const color = getCategoryColor(category);
+        switch (category) {
+            case 'Palaces': return <Landmark size={16} color={color} />;
+            case 'Churches': return <Church size={16} color={color} />;
+            case 'Living Heritage': return <Home size={16} color={color} />;
+            case 'Infrastructure': return <Route size={16} color={color} />;
+            default: return null;
+        }
+    };
+
     return (
         <div className="absolute top-4 left-4 z-[1000] bg-white/90 backdrop-blur-md p-5 rounded-xl shadow-lg border border-slate-200 w-72">
             {/* District Dropdown */}
@@ -36,17 +49,21 @@ export default function FilterPanel({
                 ))}
             </select>
 
-            {/* Category Filter */}
-            <h2 className="text-sm font-black uppercase tracking-wider text-slate-500 mb-3">Heritage Type</h2>
-            <div className="space-y-2 mb-6">
+            {/* Category Filter with Icons */}
+            <h2 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">Heritage Type</h2>
+            <div className="space-y-3 mb-6">
                 {CATEGORIES.map(category => (
                     <label key={category} className="flex items-center space-x-3 cursor-pointer group">
                         <input
                             type="checkbox" checked={activeCategories.includes(category)}
                             onChange={() => toggleItem(category, activeCategories, setActiveCategories)}
-                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+                            className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer"
                         />
-                        <span className="text-slate-700 font-medium text-sm group-hover:text-blue-600 transition-colors">{category}</span>
+                        {/* Inserted the icon right before the text */}
+                        <span className="flex items-center text-slate-700 font-medium text-sm group-hover:text-slate-900 transition-colors">
+                            <span className="mr-2 opacity-90 drop-shadow-sm">{renderCategoryIcon(category)}</span>
+                            {category}
+                        </span>
                     </label>
                 ))}
             </div>
