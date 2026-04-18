@@ -20,22 +20,7 @@ import "leaflet/dist/leaflet.css";
 import { renderToString } from "react-dom/server";
 import { Landmark, Church, Home, Route, MapPin } from "lucide-react";
 
-type SiteBase = {
-  xid: string;
-  name: string;
-  category: string;
-  era: string;
-  elevation_cm: number;
-  elevationSource: "heritage" | "api" | "fallback";
-};
-
-type HeritageSite = SiteBase & {
-  lat: number;
-  lon: number;
-  source: "heritage";
-};
-
-type ApiSite = SiteBase & {
+type ApiSite = {
   kinds: string;
   point: {
     lat: number;
@@ -59,7 +44,7 @@ const stableElevationFromId = (id: string): number => {
   for (let i = 0; i < id.length; i += 1) {
     hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
   }
-  return 70 + (hash % 81); // 70-150 inclusive
+  return 40 + (hash % 121); // 40-160 inclusive - includes low elevations for flooding
 };
 
 // This invisible component sits inside the map and controls the "Camera"
@@ -106,10 +91,9 @@ export default function MapContainer({
     underwater: number;
   }) => void;
 }) {
-  const [heritageSites, setHeritageSites] = useState<any[]>([]);
-const [apiPlaces, setApiPlaces] = useState<any[]>([]);
-const [boundaries, setBoundaries] = useState<any>(null);
-const [veniceOutline, setVeniceOutline] = useState<any>(null);
+  const [apiPlaces, setApiPlaces] = useState<any[]>([]);
+  const [boundaries, setBoundaries] = useState<any>(null);
+  const [veniceOutline, setVeniceOutline] = useState<any>(null);
 
   const isValidVeniceSite = (site: any) => {
     const latitude = Number(site.lat || site.point?.lat);
@@ -128,24 +112,9 @@ const [veniceOutline, setVeniceOutline] = useState<any>(null);
 
   useEffect(() => {
     fetch("/data/venice.geojson")
-  .then((res) => res.json())
-  .then((data) => setVeniceOutline(data))
-  .catch(console.error);
-
-    fetch("/data/heritage_sites.json")
       .then((res) => res.json())
-      .then((data) =>
-        setHeritageSites(
-          Array.isArray(data)
-            ? data.filter(isValidVeniceSite).map((site: any) => ({
-                ...site,
-                elevation_cm: clampElevation(Number(site.elevation_cm)),
-                elevationSource: "heritage" as const,
-              }))
-            : [],
-        ),
-      )
-      .catch(() => setHeritageSites([]));
+      .then((data) => setVeniceOutline(data))
+      .catch(console.error);
 
     async function loadApiPlaces() {
       try {
@@ -193,30 +162,17 @@ const [veniceOutline, setVeniceOutline] = useState<any>(null);
   const getApiPlaceEra = (place: any) =>
     getVenetianEra(place.name ?? "", place.xid);
 
-  const filteredHeritagePlaces = heritageSites.filter(
-    (place) =>
-      activeCategories.includes(place.category) &&
-      activeEras.includes(place.era),
-  );
-
   const filteredApiPlaces = apiPlaces.filter(
     (place) =>
       activeCategories.includes(getApiPlaceCategory(place)) &&
       activeEras.includes(getApiPlaceEra(place)),
   );
 
-  const mergedPlaces = [
-    ...filteredHeritagePlaces.map((place) => ({
-      ...place,
-      source: "heritage",
-      elevationSource: "heritage",
-    })),
-    ...filteredApiPlaces.map((place) => ({
-      ...place,
-      source: "api",
-      elevationSource: "api",
-    })),
-  ];
+  const mergedPlaces = filteredApiPlaces.map((place) => ({
+    ...place,
+    source: "api",
+    elevationSource: "api",
+  }));
 
   console.log(
     "MapContainer currentSeaLevel:",
@@ -287,18 +243,18 @@ const [veniceOutline, setVeniceOutline] = useState<any>(null);
 
   // The Dynamic Styling Logic
   const getBoundaryStyle = (feature: any) => {
-  const isSelected = feature.properties.name === activeDistrict;
+    const isSelected = feature.properties.name === activeDistrict;
 
-  if (activeDistrict === "All Venice") {
-    return { opacity: 0, fillOpacity: 0 };
-  }
+    if (activeDistrict === "All Venice") {
+      return { opacity: 0, fillOpacity: 0 };
+    }
 
-  return {
-    fillOpacity: 0,
-    color: isSelected ? "#55b2e0" : "transparent",
-    weight: isSelected ? 2 : 0,
+    return {
+      fillOpacity: 0,
+      color: isSelected ? "#55b2e0" : "transparent",
+      weight: isSelected ? 2 : 0,
+    };
   };
-};
 
   const lagoonOverlayOpacity = Math.min(
     0.45,
@@ -313,17 +269,17 @@ const [veniceOutline, setVeniceOutline] = useState<any>(null);
       className="w-full h-full"
     >
       {veniceOutline && (
-  <GeoJSON
-    data={veniceOutline}
-    style={() => ({
-      color: "transparent",
-      fillColor: "#3b82f6",
-      fillOpacity: lagoonOverlayOpacity,
-    })}
-    interactive={false}
-    key={`flood-${currentSeaLevel}`}
-  />
-)}
+        <GeoJSON
+          data={veniceOutline}
+          style={() => ({
+            color: "transparent",
+            fillColor: "#3b82f6",
+            fillOpacity: lagoonOverlayOpacity,
+          })}
+          interactive={false}
+          key={`flood-${currentSeaLevel}`}
+        />
+      )}
       {/* Dark/Antique Tile Layer for Professional LBS Look */}
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"

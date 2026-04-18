@@ -19,7 +19,7 @@ const stableElevationFromId = (id: string): number => {
     for (let i = 0; i < id.length; i += 1) {
         hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
     }
-    return 70 + (hash % 81);
+    return 40 + (hash % 121); // 40-160 inclusive - includes low elevations for flooding
 };
 
 export default function Sidebar({
@@ -35,38 +35,24 @@ export default function Sidebar({
 }) {
     const [details, setDetails] = useState<any>(null);
     const [loading, setLoading] = useState(false);
-    const [localSites, setLocalSites] = useState<any[]>([]);
-
-    useEffect(() => {
-        fetch('/data/heritage_sites.json')
-            .then(res => res.json())
-            .then(data => setLocalSites(Array.isArray(data) ? data : []))
-            .catch(() => setLocalSites([]));
-    }, []);
 
     useEffect(() => {
         if (!selectedXid) return;
         setLoading(true);
 
-        if (selectedXid.startsWith('heritage-')) {
-            const local = localSites.find(site => site.xid === selectedXid);
-            setDetails(local ? { ...local, localOnly: true } : null);
-            setLoading(false);
-            return;
-        }
-
+        // Fetch details from OpenTripMap API
         fetch(`https://api.opentripmap.com/0.1/en/places/xid/${selectedXid}?apikey=${OTM_API_KEY}`)
             .then(res => res.json())
             .then(data => {
+                console.log(data);
                 setDetails(data);
                 setLoading(false);
             })
             .catch(() => {
-                const local = localSites.find(site => site.xid === selectedXid);
-                setDetails(local ? { ...local, localOnly: true } : null);
+                setDetails(null);
                 setLoading(false);
             });
-    }, [selectedXid, localSites]);
+    }, [selectedXid]);
 
     // 1. Add this helper function inside or above your component
     const getValidImageUrl = (details: any) => {
@@ -136,10 +122,8 @@ export default function Sidebar({
                                 </div>
 
                                 {details && (() => {
-                                    const rawElevation = details.elevation_cm;
-                                    const elevation = typeof rawElevation === 'number' && Number.isFinite(rawElevation)
-                                        ? clampElevation(rawElevation)
-                                        : stableElevationFromId(details.xid ?? `${details.point?.lat}-${details.point?.lon}`);
+                                    // Use the same elevation calculation as the map
+                                    const elevation = stableElevationFromId(details.xid ?? `${details.point?.lat}-${details.point?.lon}`);
                                     const floodedDepth = currentSeaLevel > elevation
                                         ? ((currentSeaLevel - elevation) / 100).toFixed(2)
                                         : null;
