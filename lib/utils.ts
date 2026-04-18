@@ -4,16 +4,23 @@
 export function getCategory(kinds: string): string {
     if (kinds.includes('palaces') || kinds.includes('fortifications')) return 'Palaces';
     if (kinds.includes('churches') || kinds.includes('monasteries') || kinds.includes('religion')) return 'Churches';
-    if (kinds.includes('museums') || kinds.includes('historic_architecture')) return 'Living Heritage';
-    if (kinds.includes('bridges') || kinds.includes('squares')) return 'Infrastructure';
-    return 'Other'; // Fallback
+    if (
+        kinds.includes('museums') ||
+        kinds.includes('historic_architecture') ||
+        kinds.includes('historic') ||
+        kinds.includes('architecture') ||
+        kinds.includes('cultural') ||
+        kinds.includes('museum')
+    ) return 'Living Heritage';
+    if (kinds.includes('bridges') || kinds.includes('squares') || kinds.includes('infrastructure')) return 'Infrastructure';
+    return 'Living Heritage'; // Fallback to keep unknown API sites visible
 }
 
 // Assigns a color based on the category
 export function getCategoryColor(category: string): string {
     switch (category) {
         case 'Palaces': return '#FFAB00'; // Gold
-        case 'Churches': return '#E60000'; // Red
+        case 'Churches': return '#7c3aed'; // Red (deep violet)
         case 'Living Heritage': return '#A0522D'; // Sienna
         case 'Infrastructure': return '#0082FF'; // Blue
         default: return '#808080'; // Gray

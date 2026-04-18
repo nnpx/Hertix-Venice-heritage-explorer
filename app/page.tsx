@@ -5,6 +5,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import FilterPanel from '@/components/FilterPanel';
 import Sidebar from '@/components/Sidebar';
+import ProjectedWaterLevelWidget from '@/components/widgets/ProjectedWaterLevelWidget';
 
 import { VENETIAN_ERAS } from '@/lib/utils';
 
@@ -27,21 +28,46 @@ export default function AppDashboard() {
   const [activeDistrict, setActiveDistrict] = useState<string>('All Venice');
 
   const [selectedXid, setSelectedXid] = useState<string | null>(null);
+  const [currentSeaLevel, setCurrentSeaLevel] = useState<number>(0);
+  const [visibleSiteCount, setVisibleSiteCount] = useState<number>(0);
+  const [underwaterSiteCount, setUnderwaterSiteCount] = useState<number>(0);
+
+  console.log('Global Sea Level:', currentSeaLevel);
 
   return (
     <main className="h-screen w-screen relative overflow-hidden bg-slate-50 font-sans">
-      <FilterPanel
-        activeCategories={activeCategories} setActiveCategories={setActiveCategories}
-        activeEras={activeEras} setActiveEras={setActiveEras}
-        activeDistrict={activeDistrict}           // PASS IT DOWN
-        setActiveDistrict={setActiveDistrict}     // PASS IT DOWN
-      />
+      <div className="absolute top-4 left-4 z-1000 flex flex-col gap-4 w-72 pointer-events-auto">
+        <FilterPanel
+          activeCategories={activeCategories} setActiveCategories={setActiveCategories}
+          activeEras={activeEras} setActiveEras={setActiveEras}
+          activeDistrict={activeDistrict}           // PASS IT DOWN
+          setActiveDistrict={setActiveDistrict}     // PASS IT DOWN
+        />
+        <ProjectedWaterLevelWidget
+          lat={45.4371}
+          lon={12.3327}
+          currentSeaLevel={currentSeaLevel}
+          onSeaLevelChange={setCurrentSeaLevel}
+          totalVisibleSites={visibleSiteCount}
+          underwaterSiteCount={underwaterSiteCount}
+        />
+      </div>
       <Map
         activeCategories={activeCategories} activeEras={activeEras}
         activeDistrict={activeDistrict}           // PASS IT DOWN
+        currentSeaLevel={currentSeaLevel}
         onMarkerClick={setSelectedXid}
+        onVisibleCountsChange={({ total, underwater }) => {
+          setVisibleSiteCount(total);
+          setUnderwaterSiteCount(underwater);
+        }}
       />
-      <Sidebar selectedXid={selectedXid} onClose={() => setSelectedXid(null)} />
+      <Sidebar
+        selectedXid={selectedXid}
+        onClose={() => setSelectedXid(null)}
+        currentSeaLevel={currentSeaLevel}
+        onSeaLevelChange={setCurrentSeaLevel}
+      />
     </main>
   );
 }
