@@ -86,6 +86,25 @@ export default function Sidebar({
         return null;
     };
 
+    // 1. Add this helper function inside or above your component
+    const getValidImageUrl = (details: any) => {
+        if (!details) return null;
+
+        // If the image points to a Wikimedia File page, extract the name and use Special:FilePath
+        if (details.image && details.image.includes('File:')) {
+            const filename = details.image.split('File:')[1];
+            // Request a 400px wide image directly
+            return `https://commons.wikimedia.org/wiki/Special:FilePath/${filename}?width=400`;
+        }
+
+        // Fallback to preview.source if it's not a broken Wikimedia link
+        if (details.preview?.source && !details.preview.source.includes('wikimedia')) {
+            return details.preview.source;
+        }
+
+        return null;
+    };
+
     return (
         <AnimatePresence>
             {selectedXid && (
