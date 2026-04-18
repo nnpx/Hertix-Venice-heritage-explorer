@@ -24,11 +24,31 @@ export default function Sidebar({
         fetch(`https://api.opentripmap.com/0.1/en/places/xid/${selectedXid}?apikey=${OTM_API_KEY}`)
             .then(res => res.json())
             .then(data => {
+                console.log(data)
                 setDetails(data);
                 setLoading(false);
             })
             .catch(() => setLoading(false));
     }, [selectedXid]);
+
+    // 1. Add this helper function inside or above your component
+    const getValidImageUrl = (details: any) => {
+        if (!details) return null;
+
+        // If the image points to a Wikimedia File page, extract the name and use Special:FilePath
+        if (details.image && details.image.includes('File:')) {
+            const filename = details.image.split('File:')[1];
+            // Request a 400px wide image directly
+            return `https://commons.wikimedia.org/wiki/Special:FilePath/${filename}?width=400`;
+        }
+
+        // Fallback to preview.source if it's not a broken Wikimedia link
+        if (details.preview?.source && !details.preview.source.includes('wikimedia')) {
+            return details.preview.source;
+        }
+
+        return null;
+    };
 
     return (
         <AnimatePresence>
@@ -58,11 +78,15 @@ export default function Sidebar({
                             </div>
                         ) : details ? (
                             <>
-                                {details.preview?.source && (
+                                {getValidImageUrl(details) && (
                                     <img
-                                        src={details.preview.source}
+                                        src={getValidImageUrl(details)!}
                                         alt={details.name}
-                                        className="w-full h-48 object-cover rounded-xl shadow-sm"
+                                        className="w-full h-48 object-cover rounded-xl shadow-sm bg-slate-100"
+                                        onError={(e) => {
+                                            // Failsafe: hide the image completely if Wikimedia still rejects it
+                                            e.currentTarget.style.display = 'none';
+                                        }}
                                     />
                                 )}
 
