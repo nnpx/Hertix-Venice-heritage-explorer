@@ -77,6 +77,7 @@ export default function MapContainer({
   currentSeaLevel,
   onMarkerClick,
   onVisibleCountsChange,
+  onDistrictClick,
 }: {
   activeCategories: string[];
   activeEras: string[];
@@ -90,6 +91,7 @@ export default function MapContainer({
     total: number;
     underwater: number;
   }) => void;
+  onDistrictClick: (district: string) => void;
 }) {
   const [apiPlaces, setApiPlaces] = useState<any[]>([]);
   const [boundaries, setBoundaries] = useState<any>(null);
@@ -114,6 +116,11 @@ export default function MapContainer({
     fetch("/data/venice.geojson")
       .then((res) => res.json())
       .then((data) => setVeniceOutline(data))
+      .catch(console.error);
+
+    fetch("/data/boundaries.json")
+      .then((res) => res.json())
+      .then((data) => setBoundaries(data))
       .catch(console.error);
 
     async function loadApiPlaces() {
@@ -250,7 +257,8 @@ export default function MapContainer({
     }
 
     return {
-      fillOpacity: 0,
+      fillColor: isSelected ? "#55b2e0" : "transparent",
+      fillOpacity: isSelected ? 0.3 : 0,
       color: isSelected ? "#55b2e0" : "transparent",
       weight: isSelected ? 2 : 0,
     };

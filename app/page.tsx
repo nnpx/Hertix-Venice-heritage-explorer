@@ -57,6 +57,7 @@ export default function AppDashboard() {
         activeDistrict={activeDistrict}           // PASS IT DOWN
         currentSeaLevel={currentSeaLevel}
         onMarkerClick={setSelectedXid}
+        onDistrictClick={setActiveDistrict}
         onVisibleCountsChange={({ total, underwater }) => {
           setVisibleSiteCount(total);
           setUnderwaterSiteCount(underwater);
